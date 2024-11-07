@@ -27,4 +27,4 @@ curl -v localhost:10000 2>&1 | grep rsp-header-from-go
 
 ### Expected Output
 
-You will see the Google HTML content along with a "pong" response from Redis.
+You will see the Google HTML content along with a "pong" response from Redis in the envoy proxy logs.
