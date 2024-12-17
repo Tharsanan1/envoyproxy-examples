@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"strconv"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	// "time"
+
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/go-redis/redis/v8"
-	"context"
 )
 
 var UpdateUpstreamBody = "upstream response body updated by the simple plugin"
@@ -20,6 +22,33 @@ type filter struct {
 	callbacks api.FilterCallbackHandler
 	path      string
 	config    *config
+}
+var counter = 0
+
+func init() {
+	api.LogErrorf("TEst log")
+	// print test log every second
+	// go func() {
+	// 	for {
+	// 		api.LogInfof("test log")
+	// 		time.Sleep(time.Second)
+	// 	}
+	// }()
+
+	go func() {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Respond to every request with "hello"
+			fmt.Fprintln(w, "hello")
+			api.LogInfof("handling server request")
+			counter = counter+1
+		})
+
+		// Listen on port 8088 and log errors if any
+		err := http.ListenAndServe(":8088", nil)
+		if err != nil {
+			api.LogErrorf("Error starting server: %v", err)
+		}
+	}()
 }
 
 func (f *filter) sendLocalReplyInternal() api.StatusType {
@@ -80,7 +109,7 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 	if f.path == "/update_upstream_response" {
 		header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
 	}
-	header.Set("Rsp-Header-From-Go", "bar-test")
+	header.Set("Rsp-Header-From-Go", fmt.Sprintf("bar-test-%d", counter))
 	// support suspending & resuming the filter in a background goroutine
 	return api.Continue
 }
